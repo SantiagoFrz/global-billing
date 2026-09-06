@@ -65,5 +65,6 @@ Celery Worker y Beat se levantan con Compose. Backup manual: `docker compose --p
 - [Despliegue](docs/DEPLOYMENT.md)
 - [Backups](docs/BACKUP_RESTORE.md)
 - [Seguridad](docs/SECURITY.md)
+- [Informe de entrega](docs/FINAL_REPORT.md)
 
 No se deben commitear `.env`, secretos TOTP, credenciales, documentos ni dumps.
