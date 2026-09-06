@@ -246,6 +246,7 @@ class ContractViewSet(AdminViewSet):
 class ContractVersionViewSet(AdminViewSet):
     queryset = ContractVersion.objects.select_related("contract").all()
     serializer_class = s.ContractVersionSerializer
+    filterset_fields = ("contract", "effective_from")
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
@@ -402,6 +403,7 @@ class FinancialPeriodViewSet(AdminViewSet):
 class InternalNoteViewSet(AdminViewSet):
     queryset = InternalNote.objects.all()
     serializer_class = s.InternalNoteSerializer
+    filterset_fields = ("client", "project", "contract")
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)

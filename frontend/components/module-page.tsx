@@ -3,6 +3,7 @@
 import { PlusIcon, SlidersHorizontalIcon } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { apiFetch, formatCOP, formatDate, Paginated } from "@/lib/api";
 import { Button, DataTable, Input, Modal, Panel, StatusBadge } from "./ui";
 import { CalendarPage, ReportsPage } from "./reporting-pages";
@@ -36,7 +37,7 @@ export function ModulePage({ slug }: { slug: string }) {
   const [form, setForm] = useState<Record<string,string>>(() => Object.fromEntries((config.fields ?? []).map(f => [f.key,f.default ?? ""])));
   const list = useQuery({queryKey:["module",config.endpoint],queryFn:()=>apiFetch<Paginated<RecordRow>>(`/api/v1/${config.endpoint}/?page_size=50`)});
   const create = useMutation({mutationFn:()=>apiFetch(`/api/v1/${config.endpoint}/`,{method:"POST",body:JSON.stringify(Object.fromEntries(Object.entries(form).filter(([,v])=>v!=="").map(([k,v])=>[(config.fields?.find(f=>f.key===k)?.type)==="number" ? k : k,(config.fields?.find(f=>f.key===k)?.type)==="number" ? Number(v) : v])))}),onSuccess:()=>{queryClient.invalidateQueries({queryKey:["module",config.endpoint]});setCreateOpen(false);}});
-  const columns = useMemo(() => config.columns.map(column => ({key:column.key,label:column.label,render:(row:RecordRow)=> column.kind === "money" ? formatCOP(Number(row[column.key] ?? 0)) : column.kind === "date" ? formatDate(row[column.key] as string | null) : column.kind === "status" ? <StatusBadge status={String(row[column.key] ?? "info")}/> : String(row[column.key] ?? "—")})),[config.columns]);
+  const columns = useMemo(() => config.columns.map((column, index) => ({key:column.key,label:column.label,render:(row:RecordRow)=> { const value = column.kind === "money" ? formatCOP(Number(row[column.key] ?? 0)) : column.kind === "date" ? formatDate(row[column.key] as string | null) : column.kind === "status" ? <StatusBadge status={String(row[column.key] ?? "info")}/> : String(row[column.key] ?? "—"); return index === 0 && row.id ? <Link className="table-link" href={`/${slug}/${row.id}`}>{value}</Link> : value; }})),[config.columns, slug]);
   const isCalendar = slug === "calendar";
   const isReports = slug === "reports";
   const isSettings = slug === "settings";
