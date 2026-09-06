@@ -11,10 +11,10 @@ backend/media/
 backend/staticfiles/
 frontend/node_modules/
 frontend/.next/
+frontend/tsconfig.tsbuildinfo
 frontend/playwright-report/
 frontend/test-results/
 coverage/
 backups/
 *.log
 .DS_Store
-
