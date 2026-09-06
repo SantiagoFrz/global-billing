@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from django.db.models import Q
 from django.utils import timezone
-from rest_framework import permissions, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 
+from apps.accounts.permissions import IsInternalAdmin
 from apps.audit.models import ActivityEvent, AuditLog
+from apps.audit.services import audit_event
 from apps.billing.models import (
     BillingIssuer,
     ChargeDocument,
@@ -16,6 +18,7 @@ from apps.billing.models import (
 )
 from apps.billing.services import generate_charge_document, generate_contract_schedule, grant_waiver
 from apps.clients.models import Client, ClientBillingProfile
+from apps.common.models import FinancialRecord
 from apps.contracts.models import BillingRule, Contract, ContractService, ContractVersion
 from apps.distributions.models import (
     DistributionLine,
@@ -27,7 +30,7 @@ from apps.distributions.models import (
 from apps.distributions.services import calculate_distribution
 from apps.documents.models import Document, DocumentVersion, InternalNote
 from apps.expenses.models import Expense, ExpenseAllocation, ExpenseCategory
-from apps.expenses.services import confirm_allocations
+from apps.expenses.services import confirm_allocations, record_expense_payment
 from apps.notifications.models import Notification
 from apps.payments.models import Payment, PaymentAllocation
 from apps.payments.services import allocate_payment, record_payment
@@ -36,6 +39,7 @@ from apps.periods.services import close_period, reopen_period
 from apps.projects.models import Project, Service
 from apps.provisions.models import ProvisionPlan
 from apps.provisions.services import consume, contribute
+from apps.reporting.models import ImportBatch, LegacyRecord, ReconciliationIssue
 from apps.treasury.models import BankAccount, BankTransaction, FundMovement, InternalFund, InternalTransfer
 from apps.treasury.services import execute_internal_transfer
 
@@ -44,7 +48,33 @@ from .services import financial_breakdown
 
 
 class AdminViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsInternalAdmin]
+
+    def destroy(self, request, *args, **kwargs):
+        return Response(
+            {
+                "detail": "Este registro no se elimina físicamente. Usa archivar, cancelar o anular según corresponda."
+            },
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
+    @action(detail=True, methods=["post"])
+    def void(self, request, pk=None):
+        instance = self.get_object()
+        if not isinstance(instance, FinancialRecord):
+            return Response(
+                {"detail": "Este tipo de registro debe archivarse mediante su estado."}, status=400
+            )
+        reason = str(request.data.get("reason", "")).strip()
+        if not reason:
+            return Response({"detail": "Debes indicar el motivo de anulación."}, status=400)
+        instance.is_void = True
+        instance.voided_at = timezone.now()
+        instance.voided_by = request.user
+        instance.void_reason = reason
+        instance.save(update_fields=["is_void", "voided_at", "voided_by", "void_reason", "updated_at"])
+        audit_event(user=request.user, action="record.voided", instance=instance, after={"reason": reason})
+        return Response(self.get_serializer(instance).data)
 
 
 def standard_viewset(name, model, serializer, search_fields=(), filterset_fields=()):
@@ -182,6 +212,23 @@ ActivityEventViewSet = standard_viewset(
     ("title", "description"),
     ("client", "event_type"),
 )
+ImportBatchViewSet = standard_viewset(
+    "ImportBatchViewSet", ImportBatch, s.ImportBatchSerializer, ("filename", "sheet_name"), ("status",)
+)
+LegacyRecordViewSet = standard_viewset(
+    "LegacyRecordViewSet",
+    LegacyRecord,
+    s.LegacyRecordSerializer,
+    ("concept", "legacy_period_label"),
+    ("batch", "record_type", "requires_review"),
+)
+ReconciliationIssueViewSet = standard_viewset(
+    "ReconciliationIssueViewSet",
+    ReconciliationIssue,
+    s.ReconciliationIssueSerializer,
+    ("message", "source_reference"),
+    ("batch", "code", "severity"),
+)
 
 
 class ContractViewSet(AdminViewSet):
@@ -250,7 +297,9 @@ class ExpenseViewSet(AdminViewSet):
     filterset_fields = ("scope", "client", "category", "is_void")
 
     def perform_create(self, serializer):
-        serializer.save(recorded_by=self.request.user)
+        expense = serializer.save(recorded_by=self.request.user)
+        if expense.paid_at and expense.bank_account_id:
+            record_expense_payment(expense=expense, user=self.request.user)
 
     @action(detail=True, methods=["post"])
     def allocate(self, request, pk=None):

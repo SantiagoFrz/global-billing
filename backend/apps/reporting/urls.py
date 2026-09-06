@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from . import views
+from . import reports, views
 
 router = DefaultRouter()
 registrations = {
@@ -43,6 +43,9 @@ registrations = {
     "activity": views.ActivityEventViewSet,
     "notifications": views.NotificationViewSet,
     "audit": views.AuditLogViewSet,
+    "import-batches": views.ImportBatchViewSet,
+    "legacy-records": views.LegacyRecordViewSet,
+    "reconciliation-issues": views.ReconciliationIssueViewSet,
 }
 for prefix, viewset in registrations.items():
     router.register(prefix, viewset, basename=prefix)
@@ -50,5 +53,11 @@ for prefix, viewset in registrations.items():
 urlpatterns = [
     path("dashboard/", views.dashboard),
     path("search/", views.global_search),
+    path("reports/aging/", reports.aging_report),
+    path("reports/projection/", reports.projection),
+    path("reports/profitability/", reports.client_profitability),
+    path("reports/monthly.xlsx", reports.monthly_report_xlsx),
+    path("reports/monthly.pdf", reports.monthly_report_pdf),
+    path("calendar/events/", reports.calendar_events),
     path("", include(router.urls)),
 ]

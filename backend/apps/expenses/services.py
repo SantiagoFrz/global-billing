@@ -1,8 +1,37 @@
 from django.db import transaction
 
 from apps.audit.services import audit_event
+from apps.treasury.models import BankTransaction
 
 from .models import Expense, ExpenseAllocation
+
+
+@transaction.atomic
+def record_expense_payment(*, expense: Expense, user) -> Expense:
+    expense = Expense.objects.select_for_update().get(pk=expense.pk)
+    if expense.bank_transaction_id:
+        return expense
+    if not expense.paid_at or not expense.bank_account_id:
+        raise ValueError("Para registrar la salida debes indicar cuenta bancaria y fecha de pago.")
+    transaction_record = BankTransaction.objects.create(
+        account=expense.bank_account,
+        kind=BankTransaction.Kind.EXPENSE,
+        amount=-expense.amount,
+        occurred_at=expense.paid_at,
+        description=expense.concept,
+        recorded_by=user,
+        source_type="expense",
+        source_id=str(expense.pk),
+    )
+    expense.bank_transaction = transaction_record
+    expense.save(update_fields=["bank_transaction", "updated_at"])
+    audit_event(
+        user=user,
+        action="expense.paid",
+        instance=expense,
+        after={"amount": expense.amount, "bank_transaction": str(transaction_record.pk)},
+    )
+    return expense
 
 
 @transaction.atomic

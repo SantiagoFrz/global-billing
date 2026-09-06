@@ -25,6 +25,7 @@ from apps.payments.models import Payment, PaymentAllocation
 from apps.periods.models import FinancialPeriod, MonthlyClose, PeriodReopening
 from apps.projects.models import Project, Service
 from apps.provisions.models import ProvisionConsumption, ProvisionContribution, ProvisionPlan
+from apps.reporting.models import ImportBatch, LegacyRecord, ReconciliationIssue
 from apps.treasury.models import BankAccount, BankTransaction, FundMovement, InternalFund, InternalTransfer
 
 
@@ -96,6 +97,9 @@ InternalNoteSerializer = model_serializer("InternalNoteSerializer", InternalNote
 NotificationSerializer = model_serializer("NotificationSerializer", Notification, ("recipient",))
 AuditLogSerializer = model_serializer("AuditLogSerializer", AuditLog)
 ActivityEventSerializer = model_serializer("ActivityEventSerializer", ActivityEvent)
+ImportBatchSerializer = model_serializer("ImportBatchSerializer", ImportBatch)
+LegacyRecordSerializer = model_serializer("LegacyRecordSerializer", LegacyRecord)
+ReconciliationIssueSerializer = model_serializer("ReconciliationIssueSerializer", ReconciliationIssue)
 ProvisionContributionSerializer = model_serializer(
     "ProvisionContributionSerializer", ProvisionContribution, ("recorded_by", "suggested_amount_snapshot")
 )

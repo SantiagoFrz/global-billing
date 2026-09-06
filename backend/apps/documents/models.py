@@ -1,7 +1,39 @@
+import uuid
+from pathlib import Path
+
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 
 from apps.common.models import TimeStampedUUIDModel
+
+ALLOWED_DOCUMENT_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg", ".docx", ".xlsx"}
+ALLOWED_DOCUMENT_TYPES = {
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+}
+MAX_DOCUMENT_SIZE = 10 * 1024 * 1024
+
+
+def secure_document_path(instance, filename: str) -> str:
+    extension = Path(filename).suffix.lower()
+    created_at = instance.created_at or timezone.now()
+    return f"documents/{created_at:%Y/%m}/{uuid.uuid4().hex}{extension}"
+
+
+def validate_document_file(file) -> None:
+    extension = Path(file.name).suffix.lower()
+    content_type = getattr(file, "content_type", "")
+    if extension not in ALLOWED_DOCUMENT_EXTENSIONS:
+        raise ValidationError("Este tipo de archivo no está permitido.")
+    if content_type and content_type not in ALLOWED_DOCUMENT_TYPES:
+        raise ValidationError("El contenido del archivo no coincide con un formato permitido.")
+    if file.size > MAX_DOCUMENT_SIZE:
+        raise ValidationError("El archivo supera el límite de 10 MB.")
 
 
 class Document(TimeStampedUUIDModel):
@@ -36,7 +68,7 @@ class Document(TimeStampedUUIDModel):
 class DocumentVersion(TimeStampedUUIDModel):
     document = models.ForeignKey(Document, on_delete=models.PROTECT, related_name="versions")
     version_number = models.PositiveIntegerField()
-    file = models.FileField(upload_to="documents/%Y/%m/")
+    file = models.FileField(upload_to=secure_document_path, validators=[validate_document_file])
     original_filename = models.CharField(max_length=240)
     content_type = models.CharField(max_length=120)
     size_bytes = models.PositiveBigIntegerField()
