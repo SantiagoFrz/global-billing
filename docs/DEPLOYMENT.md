@@ -8,7 +8,7 @@
 
 ## Procedimiento
 
-1. Clonar en `/opt/global-billing` y crear `.env` con `DEBUG=false`.
+1. Clonar en `/opt/global-billing`, copiar `.env.production.example` a `.env` y reemplazar todos los secretos.
 2. `docker compose up --build -d`.
 3. Crear cada administrador con `docker compose exec backend python manage.py bootstrap_admin`, cambiando variables entre ejecuciones.
 4. Añadir solo el server block de `deploy/nginx/` al Nginx existente y ejecutar `nginx -t`.

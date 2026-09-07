@@ -7,6 +7,21 @@
 3. Crear usuario con `docker compose exec backend python manage.py bootstrap_admin`.
 4. Abrir `http://localhost:3000`.
 
+Para desarrollo local, confirmar que `.env` conserve estos orígenes y opciones:
+
+```dotenv
+DEBUG=true
+ALLOWED_HOSTS=localhost,127.0.0.1,backend
+CSRF_TRUSTED_ORIGINS=http://localhost:3000
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+SECURE_SSL_REDIRECT=false
+```
+
+Después de cambiar `.env`, recrear los contenedores con
+`docker compose up -d --force-recreate`. Un error `Failed to fetch` no es un
+estado vacío normal: indica que el proxy `/api` no consiguió respuesta del
+backend.
+
 El repositorio fija scripts shell en LF mediante `.gitattributes`. El Dockerfile también elimina CRLF del entrypoint para que los checkouts realizados desde Windows sean reproducibles.
 
 Clave Fernet: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`.

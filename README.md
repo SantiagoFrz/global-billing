@@ -15,6 +15,11 @@ docker compose exec backend python manage.py bootstrap_admin
 
 Abrir `http://localhost:3000`. El administrador debe activar TOTP antes de operar en producción.
 
+`.env.example` está preparado para HTTP local. No uses la configuración de
+producción (`DEBUG=false` + `SECURE_SSL_REDIRECT=true`) en localhost: las
+peticiones internas del proxy serían redirigidas a HTTPS y el navegador
+mostraría `Failed to fetch`.
+
 ## Desarrollo sin Docker
 
 ```bash
