@@ -2,8 +2,8 @@ import { expect, test } from "@playwright/test";
 
 test("muestra login accesible y conserva tema", async ({ page }) => {
   await page.goto("/login");
-  await expect(page.getByRole("heading", { name: "Bienvenido de nuevo" })).toBeVisible();
-  await expect(page.getByLabel("Correo electrónico")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bienvenido de vuelta" })).toBeVisible();
+  await expect(page.getByLabel("Correo")).toBeVisible();
   await expect(page.getByLabel("Contraseña")).toBeVisible();
   await expect(page.getByRole("button", { name: /ingresar/i })).toBeVisible();
 });
