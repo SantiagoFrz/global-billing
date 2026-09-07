@@ -13,7 +13,7 @@
 3. Crear cada administrador con `docker compose exec backend python manage.py bootstrap_admin`, cambiando variables entre ejecuciones.
 4. Añadir solo el server block de `deploy/nginx/` al Nginx existente y ejecutar `nginx -t`.
 5. Obtener TLS: `certbot --nginx -d billing.globalautomate.co`.
-6. Verificar `/api/health/`, login, TOTP, jobs, documento y backup.
+6. Verificar `/api/health/`, login, TOTP, jobs, documento y backup. Nginx debe conservar `X-Forwarded-Proto`; Django lo usa para reconocer HTTPS detrás del proxy.
 7. Activar cron del backup y ensayar restauración aislada.
 
 No activar HSTS hasta confirmar HTTPS. Django habilita cookies Secure, HSTS y redirección SSL con `DEBUG=false`.
