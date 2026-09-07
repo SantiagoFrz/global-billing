@@ -10,7 +10,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 RUN mkdir -p /app/media /app/staticfiles
 COPY docker-entrypoint.sh /usr/local/bin/global-billing-entrypoint
-RUN chmod +x /usr/local/bin/global-billing-entrypoint
+RUN sed -i 's/\r$//' /usr/local/bin/global-billing-entrypoint \
+    && chmod +x /usr/local/bin/global-billing-entrypoint
 
 EXPOSE 8000
 ENTRYPOINT ["global-billing-entrypoint"]

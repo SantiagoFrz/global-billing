@@ -7,6 +7,8 @@
 3. Crear usuario con `docker compose exec backend python manage.py bootstrap_admin`.
 4. Abrir `http://localhost:3000`.
 
+El repositorio fija scripts shell en LF mediante `.gitattributes`. El Dockerfile también elimina CRLF del entrypoint para que los checkouts realizados desde Windows sean reproducibles.
+
 Clave Fernet: `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`.
 
 ## Desarrollo nativo
